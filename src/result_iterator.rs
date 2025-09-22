@@ -1,4 +1,25 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PageIteratorLevel {
+    Block,
+    Para,
+    Textline,
+    Word,
+    Symbol,
+}
+
+impl PageIteratorLevel {
+    pub(crate) fn to_sys(self) -> tesseract_sys::TessPageIteratorLevel {
+        match self {
+            PageIteratorLevel::Block => tesseract_sys::TessPageIteratorLevel_RIL_BLOCK,
+            PageIteratorLevel::Para => tesseract_sys::TessPageIteratorLevel_RIL_PARA,
+            PageIteratorLevel::Textline => tesseract_sys::TessPageIteratorLevel_RIL_TEXTLINE,
+            PageIteratorLevel::Word => tesseract_sys::TessPageIteratorLevel_RIL_WORD,
+            PageIteratorLevel::Symbol => tesseract_sys::TessPageIteratorLevel_RIL_SYMBOL,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BoundingRect {
     pub left: i32,
     pub top: i32,
@@ -11,6 +32,7 @@ pub struct ResultItem {
     pub text: Option<crate::Text>,
     pub confidence: f32,
     pub bounding_rect: Option<BoundingRect>,
+    pub level: PageIteratorLevel,
 }
 
 impl BoundingRect {
@@ -29,7 +51,7 @@ pub struct ResultIterator(*mut tesseract_sys::TessResultIterator);
 #[derive(Debug)]
 pub struct ResultIteratorIter<'a> {
     iterator: &'a mut ResultIterator,
-    level: tesseract_sys::TessPageIteratorLevel,
+    level: PageIteratorLevel,
     first_iteration: bool,
 }
 
@@ -50,31 +72,31 @@ impl ResultIterator {
         Self(raw)
     }
 
-    pub fn confidence(&self, level: tesseract_sys::TessPageIteratorLevel) -> f32 {
-        unsafe { tesseract_sys::TessResultIteratorConfidence(self.0, level) }
+    pub fn confidence(&self, level: PageIteratorLevel) -> f32 {
+        unsafe { tesseract_sys::TessResultIteratorConfidence(self.0, level.to_sys()) }
     }
 
-    pub fn is_at_beginning_of(&self, level: tesseract_sys::TessPageIteratorLevel) -> bool {
+    pub fn is_at_beginning_of(&self, level: PageIteratorLevel) -> bool {
         unsafe {
             let page_iter = tesseract_sys::TessResultIteratorGetPageIteratorConst(self.0);
-            tesseract_sys::TessPageIteratorIsAtBeginningOf(page_iter, level) != 0
+            tesseract_sys::TessPageIteratorIsAtBeginningOf(page_iter, level.to_sys()) != 0
         }
     }
 
     pub fn is_at_final_element(
         &self,
-        level: tesseract_sys::TessPageIteratorLevel,
-        element: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
+        element: PageIteratorLevel,
     ) -> bool {
         unsafe {
             let page_iter = tesseract_sys::TessResultIteratorGetPageIteratorConst(self.0);
-            tesseract_sys::TessPageIteratorIsAtFinalElement(page_iter, level, element) != 0
+            tesseract_sys::TessPageIteratorIsAtFinalElement(page_iter, level.to_sys(), element.to_sys()) != 0
         }
     }
 
     pub fn get_bounding_rect(
         &self,
-        level: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
     ) -> Option<BoundingRect> {
         unsafe {
             let page_iter = tesseract_sys::TessResultIteratorGetPageIteratorConst(self.0);
@@ -85,7 +107,7 @@ impl ResultIterator {
 
             let success = tesseract_sys::TessPageIteratorBoundingBox(
                 page_iter,
-                level,
+                level.to_sys(),
                 &mut left,
                 &mut top,
                 &mut right,
@@ -105,16 +127,16 @@ impl ResultIterator {
         }
     }
 
-    pub fn next(&mut self, level: tesseract_sys::TessPageIteratorLevel) -> bool {
-        unsafe { tesseract_sys::TessResultIteratorNext(self.0, level) != 0 }
+    pub fn next(&mut self, level: PageIteratorLevel) -> bool {
+        unsafe { tesseract_sys::TessResultIteratorNext(self.0, level.to_sys()) != 0 }
     }
 
     pub fn get_utf8_text(
         &self,
-        level: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
     ) -> Option<crate::Text> {
         unsafe {
-            let text_ptr = tesseract_sys::TessResultIteratorGetUTF8Text(self.0, level);
+            let text_ptr = tesseract_sys::TessResultIteratorGetUTF8Text(self.0, level.to_sys());
             if text_ptr.is_null() {
                 None
             } else {
@@ -125,7 +147,7 @@ impl ResultIterator {
 
     pub fn iter_at_level(
         &mut self,
-        level: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
     ) -> ResultIteratorIter<'_> {
         ResultIteratorIter {
             iterator: self,
@@ -135,53 +157,53 @@ impl ResultIterator {
     }
 
     pub fn words(&mut self) -> ResultIteratorIter<'_> {
-        self.iter_at_level(tesseract_sys::TessPageIteratorLevel_RIL_WORD)
+        self.iter_at_level(PageIteratorLevel::Word)
     }
 
     pub fn symbols(&mut self) -> ResultIteratorIter<'_> {
-        self.iter_at_level(tesseract_sys::TessPageIteratorLevel_RIL_SYMBOL)
+        self.iter_at_level(PageIteratorLevel::Symbol)
     }
 
     pub fn lines(&mut self) -> ResultIteratorIter<'_> {
-        self.iter_at_level(tesseract_sys::TessPageIteratorLevel_RIL_TEXTLINE)
+        self.iter_at_level(PageIteratorLevel::Textline)
     }
 
     pub fn paragraphs(&mut self) -> ResultIteratorIter<'_> {
-        self.iter_at_level(tesseract_sys::TessPageIteratorLevel_RIL_PARA)
+        self.iter_at_level(PageIteratorLevel::Para)
     }
 
     pub fn blocks(&mut self) -> ResultIteratorIter<'_> {
-        self.iter_at_level(tesseract_sys::TessPageIteratorLevel_RIL_BLOCK)
+        self.iter_at_level(PageIteratorLevel::Block)
     }
 }
 
 impl<'a> ResultIteratorIter<'a> {
-    pub fn is_at_beginning_of(&self, level: tesseract_sys::TessPageIteratorLevel) -> bool {
+    pub fn is_at_beginning_of(&self, level: PageIteratorLevel) -> bool {
         self.iterator.is_at_beginning_of(level)
     }
 
     pub fn is_at_final_element(
         &self,
-        level: tesseract_sys::TessPageIteratorLevel,
-        element: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
+        element: PageIteratorLevel,
     ) -> bool {
         self.iterator.is_at_final_element(level, element)
     }
 
     pub fn get_bounding_rect(
         &self,
-        level: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
     ) -> Option<BoundingRect> {
         self.iterator.get_bounding_rect(level)
     }
 
-    pub fn confidence(&self, level: tesseract_sys::TessPageIteratorLevel) -> f32 {
+    pub fn confidence(&self, level: PageIteratorLevel) -> f32 {
         self.iterator.confidence(level)
     }
 
     pub fn get_utf8_text(
         &self,
-        level: tesseract_sys::TessPageIteratorLevel,
+        level: PageIteratorLevel,
     ) -> Option<crate::Text> {
         self.iterator.get_utf8_text(level)
     }
@@ -207,6 +229,7 @@ impl<'a> Iterator for ResultIteratorIter<'a> {
             text,
             confidence,
             bounding_rect,
+            level: self.level,
         })
     }
 }
