@@ -31,3 +31,13 @@ impl AsRef<CStr> for Text {
         unsafe { CStr::from_ptr(self.0) }
     }
 }
+
+impl std::fmt::Debug for Text {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let c_str = self.as_ref();
+        match c_str.to_str() {
+            Ok(s) => write!(f, "Text({:?})", s),
+            Err(_) => write!(f, "Text(<invalid UTF-8>)"),
+        }
+    }
+}

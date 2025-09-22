@@ -6,7 +6,7 @@ use self::tesseract_sys::TessBaseAPIInit5;
 use self::tesseract_sys::{
     TessBaseAPIAllWordConfidences, TessBaseAPICreate, TessBaseAPIDelete, TessBaseAPIGetAltoText,
     TessBaseAPIGetComponentImages, TessBaseAPIGetHOCRText, TessBaseAPIGetInputImage,
-    TessBaseAPIGetLSTMBoxText, TessBaseAPIGetSourceYResolution, TessBaseAPIGetTsvText,
+    TessBaseAPIGetIterator, TessBaseAPIGetLSTMBoxText, TessBaseAPIGetSourceYResolution, TessBaseAPIGetTsvText,
     TessBaseAPIGetUTF8Text, TessBaseAPIGetWordStrBoxText, TessBaseAPIInit2, TessBaseAPIInit3,
     TessBaseAPIMeanTextConf, TessBaseAPIRecognize, TessBaseAPISetImage, TessBaseAPISetImage2,
     TessBaseAPISetPageSegMode, TessBaseAPISetRectangle, TessBaseAPISetSourceResolution,
@@ -476,6 +476,21 @@ impl TessBaseApi {
                     leptonica_plumbing::Boxa::new_from_pointer(ptr),
                 )
             })
+        }
+    }
+
+    /// Get a result iterator after performing OCR recognition
+    ///
+    /// Returns `None` if no recognition has been performed or if the iterator
+    /// cannot be created.
+    pub fn get_iterator(&mut self) -> Option<crate::ResultIterator> {
+        unsafe {
+            let iter_ptr = TessBaseAPIGetIterator(self.0);
+            if iter_ptr.is_null() {
+                None
+            } else {
+                Some(crate::ResultIterator::new(iter_ptr))
+            }
         }
     }
 }
