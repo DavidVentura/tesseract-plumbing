@@ -1,25 +1,4 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PageIteratorLevel {
-    Block,
-    Para,
-    Textline,
-    Word,
-    Symbol,
-}
-
-impl PageIteratorLevel {
-    pub(crate) fn to_sys(self) -> tesseract_sys::TessPageIteratorLevel {
-        match self {
-            PageIteratorLevel::Block => tesseract_sys::TessPageIteratorLevel_RIL_BLOCK,
-            PageIteratorLevel::Para => tesseract_sys::TessPageIteratorLevel_RIL_PARA,
-            PageIteratorLevel::Textline => tesseract_sys::TessPageIteratorLevel_RIL_TEXTLINE,
-            PageIteratorLevel::Word => tesseract_sys::TessPageIteratorLevel_RIL_WORD,
-            PageIteratorLevel::Symbol => tesseract_sys::TessPageIteratorLevel_RIL_SYMBOL,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BoundingRect {
     pub left: i32,
     pub top: i32,
