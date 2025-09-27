@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["leptonica", "tesseract", "ocr", "image"]
 license = "MIT"
 [dependencies]
-tesseract-sys = "~0.6"
+tesseract-sys = { git = "https://github.com/DavidVentura/tesseract-sys" }
 leptonica-plumbing = "1.0"
 thiserror = "1.0"
 
