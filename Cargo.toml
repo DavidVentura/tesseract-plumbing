@@ -11,7 +11,7 @@ keywords = ["leptonica", "tesseract", "ocr", "image"]
 license = "MIT"
 [dependencies]
 tesseract-sys = { git = "https://github.com/DavidVentura/tesseract-sys" }
-leptonica-plumbing = "1.0"
+leptonica-plumbing = { git = "https://github.com/DavidVentura/leptonica-plumbing" }
 thiserror = "1.0"
 
 [dev-dependencies]
